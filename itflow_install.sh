@@ -83,7 +83,7 @@ setup_apache() {
 }
 
 clone_itflow() {
-    git clone https://github.com/itflow-org/itflow.git /var/www/${domain}
+    git clone https://github.com/twetech/itflow.git /var/www/${domain}
 }
 
 setup_cronjobs() {
