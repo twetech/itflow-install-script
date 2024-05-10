@@ -83,7 +83,7 @@ setup_apache() {
 }
 
 clone_nestogy() {
-    git clone https://github.com/twetech/nestogy-ng.git /var/www/${domain}
+    git clone https://github.com/twetech/itflow-ng.git /var/www/${domain}
 }
 
 setup_cronjobs() {
