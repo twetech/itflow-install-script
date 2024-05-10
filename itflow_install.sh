@@ -15,8 +15,8 @@ check_root() {
 
 # Check OS
 check_os() {
-    if ! grep -E "22.04|12" "/etc/"*"release" &>/dev/null; then
-        echo -e "${RED}Error: This script only supports Ubuntu 22.04 or Debian 12.${NC}"
+    if ! grep -E "24.04" "/etc/"*"release" &>/dev/null; then
+        echo -e "${RED}Error: This script only supports Ubuntu 24.04.${NC}"
         exit 1
     fi
 }
