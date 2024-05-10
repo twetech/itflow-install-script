@@ -23,7 +23,7 @@ check_os() {
 
 # Get domain name from user
 get_domain() {
-    while [[ $domain != *[.]*[.]* ]]; do
+    while [[ $domain != *[.]* ]]; do
         echo -ne "Step 1: Please enter your Fully Qualified Domain (e.g., domain.com): "
         read domain
     done
@@ -78,8 +78,6 @@ setup_apache() {
     a2ensite ${domain}.conf
     a2dissite 000-default.conf
     systemctl restart apache2
-
-    certbot --apache --non-interactive --agree-tos --register-unsafely-without-email --domains ${domain}
 }
 
 clone_nestogy() {
@@ -160,6 +158,8 @@ clear
 echo "######################################################"
 echo "# Installation Completed Successfully!               #"
 echo "######################################################"
+echo ""
+echo "First, run 'sudo certbot certonly --manual --preferred-challenges dns --agree-tos  --domains *.${domain}' to get your DNS challenge."
 echo ""
 echo -e "Visit: ${GREEN}https://${domain}${NC} to complete the Nestogy setup."
 echo ""
