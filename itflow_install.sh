@@ -24,7 +24,7 @@ check_os() {
 # Get domain name from user
 get_domain() {
     while [[ $domain != *[.]*[.]* ]]; do
-        echo -ne "Step 1: Please enter your Fully Qualified Domain (e.g., itflow.domain.com): "
+        echo -ne "Step 1: Please enter your Fully Qualified Domain (e.g., domain.com): "
         read domain
     done
     echo -e "${GREEN}Domain set to: $domain${NC}"
@@ -55,8 +55,8 @@ modify_php_ini() {
     # Set the PHP_INI_PATH
     PHP_INI_PATH="/etc/php/${PHP_VERSION}/apache2/php.ini"
 
-    sed -i 's/^;\?upload_max_filesize =.*/upload_max_filesize = 500M/' $PHP_INI_PATH
-    sed -i 's/^;\?post_max_size =.*/post_max_size = 500M/' $PHP_INI_PATH
+    sed -i 's/^;\?upload_max_filesize =.*/upload_max_filesize = 5000M/' $PHP_INI_PATH
+    sed -i 's/^;\?post_max_size =.*/post_max_size = 5000M/' $PHP_INI_PATH
 }
 
 setup_webroot() {
@@ -82,8 +82,8 @@ setup_apache() {
     certbot --apache --non-interactive --agree-tos --register-unsafely-without-email --domains ${domain}
 }
 
-clone_itflow() {
-    git clone https://github.com/twetech/itflow.git /var/www/${domain}
+clone_nestogy() {
+    git clone https://github.com/twetech/nestogy-ng.git /var/www/${domain}
 }
 
 setup_cronjobs() {
@@ -95,31 +95,31 @@ setup_cronjobs() {
 generate_cronkey_file() {
     mkdir -p /var/www/${domain}/uploads/tmp
     echo "<?php" > /var/www/${domain}/uploads/tmp/cronkey.php
-    echo "\$itflow_install_script_generated_cronkey = \"${cronkey}\";" >> /var/www/${domain}/uploads/tmp/cronkey.php
+    echo "\$nestogy_install_script_generated_cronkey = \"${cronkey}\";" >> /var/www/${domain}/uploads/tmp/cronkey.php
     echo "?>" >> /var/www/${domain}/uploads/tmp/cronkey.php
     chown -R www-data:www-data /var/www/
 }
 
 setup_mysql() {
-    mysql -e "CREATE DATABASE itflow /*\!40100 DEFAULT CHARACTER SET utf8 */;"
-    mysql -e "CREATE USER itflow@localhost IDENTIFIED BY '${mariadbpwd}';"
-    mysql -e "GRANT ALL PRIVILEGES ON itflow.* TO 'itflow'@'localhost';"
+    mysql -e "CREATE DATABASE nestogy /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    mysql -e "CREATE USER nestogy@localhost IDENTIFIED BY '${mariadbpwd}';"
+    mysql -e "GRANT ALL PRIVILEGES ON nestogy.* TO 'nestogy'@'localhost';"
     mysql -e "FLUSH PRIVILEGES;"
 }
 
 print_final_instructions() {
-    echo "Please go to https://${domain} to finish setting up ITFlow"
+    echo "Please go to https://${domain} to finish setting up Nestogy"
     echo ""
     echo "In database setup section enter the following:"
-    echo "Database User: itflow"
-    echo "Database Name: itflow"
+    echo "Database User: nestogy"
+    echo "Database Name: nestogy"
     echo "Database Password: ${mariadbpwd}"
 }
 
 # Welcome Message
 clear
 echo "#############################################"
-echo "# Welcome to the ITFlow Installation Script #"
+echo "# Welcome to the Nestogy Installation Script #"
 echo "#############################################"
 echo ""
 echo "Please follow the prompts to complete the installation."
@@ -143,8 +143,8 @@ setup_webroot
 echo -e "\n${GREEN}Step 5: Configuring Apache...${NC}"
 setup_apache
 
-echo -e "\n${GREEN}Step 6: Cloning ITFlow...${NC}"
-clone_itflow
+echo -e "\n${GREEN}Step 6: Cloning Nestogy...${NC}"
+clone_nestogy
 
 echo -e "\n${GREEN}Step 7: Setting up cron jobs...${NC}"
 setup_cronjobs
@@ -161,10 +161,10 @@ echo "######################################################"
 echo "# Installation Completed Successfully!               #"
 echo "######################################################"
 echo ""
-echo -e "Visit: ${GREEN}https://${domain}${NC} to complete the ITFlow setup."
+echo -e "Visit: ${GREEN}https://${domain}${NC} to complete the Nestogy setup."
 echo ""
 echo "Database setup details:"
-echo -e "Database User: ${GREEN}itflow${NC}"
-echo -e "Database Name: ${GREEN}itflow${NC}"
+echo -e "Database User: ${GREEN}nestogy${NC}"
+echo -e "Database Name: ${GREEN}nestogy${NC}"
 echo -e "Database Password: ${GREEN}${mariadbpwd}${NC}"
 echo ""
