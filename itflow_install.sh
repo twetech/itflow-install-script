@@ -40,6 +40,7 @@ verify_script() {
         echo -e "${RED}╔════════════════════════════════════════╗${NC}"
         echo -e "${RED}║        Verification Failed!            ║${NC}"
         echo -e "${RED}║ Script may have been tampered with.    ║${NC}"
+        echo -e "${RED}║ SHA256: $SCRIPT_HASH                   ║${NC}"
         echo -e "${RED}╚════════════════════════════════════════╝${NC}"
         exit 1
     fi
