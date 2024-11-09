@@ -26,11 +26,26 @@ check_version() {
         echo -e "${RED}╔════════════════════════════════════════╗${NC}"
         echo -e "${RED}║ A newer version ($LATEST_VERSION) is available! ║${NC}"
         echo -e "${RED}║ Please run the latest installer.        ║${NC}"
-        echo -e "${RED}╚════════════════════════════════════════╝${NC}"
+        echo -e "${RED}╚══════════════════════���═════════════════╝${NC}"
         exit 1
     fi
     echo -e "${GREEN}✓${NC} Running latest version"
 } 
+
+# Script verification with styled output
+verify_script() {
+    echo -e "\n${BLUE}[•]${NC} Verifying script integrity..."
+    SCRIPT_HASH=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-install-script/refs/heads/main/itflow_install.sh.sha256)
+    if ! echo "$SCRIPT_HASH *-" | sha256sum -c - >/dev/null 2>&1; then
+        echo -e "${RED}╔════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║        Verification Failed!            ║${NC}"
+        echo -e "${RED}║ Script may have been tampered with.    ║${NC}"
+        echo -e "${RED}║ SHA256: $SCRIPT_HASH                   ║${NC}"
+        echo -e "${RED}╚════════════════════════════════════════╝${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓${NC} Script verified"
+}
 
 # Root check with styled output
 check_root() {
@@ -72,10 +87,26 @@ get_domain() {
 # Modified installation steps with progress indicators
 install_packages() {
     show_progress "1" "Installing system packages"
-    apt-get update &>/dev/null
-    apt-get -y upgrade &>/dev/null
-    apt-get install -y apache2 mariadb-server php libapache2-mod-php php-intl php-mysqli \
-    php-curl php-imap php-mailparse libapache2-mod-md certbot python3-certbot-apache git sudo &>/dev/null
+    
+    echo -e "${BLUE}[•]${NC} Updating package lists..."
+    if ! apt-get update; then
+        echo -e "${RED}Failed to update package lists${NC}"
+        exit 1
+    fi
+    
+    echo -e "${BLUE}[•]${NC} Upgrading existing packages..."
+    if ! apt-get -y upgrade; then
+        echo -e "${RED}Failed to upgrade packages${NC}"
+        exit 1
+    fi
+    
+    echo -e "${BLUE}[•]${NC} Installing required packages..."
+    if ! apt-get install -y apache2 mariadb-server php libapache2-mod-php php-intl \
+    php-mysqli php-curl php-imap php-mailparse libapache2-mod-md \
+    certbot python3-certbot-apache git sudo; then
+        echo -e "${RED}Failed to install required packages${NC}"
+        exit 1
+    fi
     
     echo -e "${GREEN}✓${NC} Packages installed successfully"
 }
@@ -118,7 +149,27 @@ setup_apache() {
 }
 
 clone_nestogy() {
-    git clone https://github.com/twetech/itflow-ng.git /var/www/${domain}
+    # Clone the repository
+    git clone https://github.com/twetech/itflow-ng.git /var/www/nestogy
+    
+    # Navigate to the project directory
+    cd /var/www/${domain}
+    
+    # Install Composer if not already installed
+    if ! [ -x "$(command -v composer)" ]; then
+        echo -e "${BLUE}[•]${NC} Installing Composer..."
+        curl -sS https://getcomposer.org/installer | php
+        mv composer.phar /usr/local/bin/composer
+        chmod +x /usr/local/bin/composer
+    fi
+    
+    # Install dependencies
+    echo -e "${BLUE}[•]${NC} Installing PHP dependencies..."
+    composer install --no-dev --optimize-autoloader
+    
+    # Set proper permissions
+    chown -R www-data:www-data /var/www/${domain}
+    chmod -R 755 /var/www/${domain}
 }
 
 setup_cronjobs() {
@@ -145,24 +196,19 @@ setup_mysql() {
 # Welcome message with styled output
 show_welcome_message() {
     clear
-    cat << "EOF"
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║                   ITFlow-NG Installation                      ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-
-                     Version: ${VERSION}
-
-This script will:
- • Install required system packages
- • Configure Apache and PHP
- • Set up MariaDB database
- • Configure SSL certificates
- • Set up automated tasks
-
-EOF
-
+    echo -e "╔═══════════════════════════════════════════════════════════════╗"
+    echo -e "║                                                               ║"
+    echo -e "║                   ITFlow-NG Installation                      ║"
+    echo -e "║                                                               ║"
+    echo -e "╚═══════════════════════════════════════════════════════════════╝"
+    echo -e "\n                     Version: ${VERSION}\n"
+    echo -e "This script will:"
+    echo -e " • Install required system packages"
+    echo -e " • Configure Apache and PHP"
+    echo -e " • Set up MariaDB database"
+    echo -e " • Configure SSL certificates"
+    echo -e " • Set up automated tasks"
+    
     echo -e "\n${YELLOW}Requirements:${NC}"
     echo -e " ${BLUE}•${NC} Ubuntu 24.04"
     echo -e " ${BLUE}•${NC} Root privileges"
@@ -176,32 +222,23 @@ EOF
 # Final instructions with styled output
 print_final_instructions() {
     clear
-    cat << EOF
-╔════════════════════════════════════════════════════════════════╗
-║                 Installation Complete! 🎉                       ║
-╚════════════════════════════════════════════════════════════════╝
-
-📋 Next Steps:
-
-1. Set up SSL Certificate:
-   Run this command to get your DNS challenge:
-   ${YELLOW}sudo certbot certonly --manual --preferred-challenges dns --agree-tos --domains *.${domain}${NC}
-
-2. Complete Setup:
-   Visit: ${GREEN}https://${domain}${NC}
-
-3. Database Credentials:
-   ┌─────────────────────────────────────────────┐
-   │ Database User:     ${GREEN}nestogy${NC}
-   │ Database Name:     ${GREEN}nestogy${NC}
-   │ Database Password: ${GREEN}${mariadbpwd}${NC}
-   └─────────────────────────────────────────────┘
-
-⚠️  Important: Save these credentials in a secure location!
-
-For support, visit: https://github.com/twetech/itflow-ng/issues
-
-EOF
+    echo -e "╔════════════════════════════════════════════════════════════════╗"
+    echo -e "║                 Installation Complete! 🎉                       ║"
+    echo -e "╚════════════════════════════════════════════════════════════════╝"
+    echo -e "\n📋 Next Steps:"
+    echo -e "\n1. Set up SSL Certificate:"
+    echo -e "   Run this command to get your DNS challenge:"
+    echo -e "   ${YELLOW}sudo certbot certonly --manual --preferred-challenges dns --agree-tos --domains *.${domain}${NC}"
+    echo -e "\n2. Complete Setup:"
+    echo -e "   Visit: ${GREEN}https://${domain}${NC}"
+    echo -e "\n3. Database Credentials:"
+    echo -e "   ┌─────────────────────────────────────────────┐"
+    echo -e "   │ Database User:     ${GREEN}nestogy${NC}"
+    echo -e "   │ Database Name:     ${GREEN}nestogy${NC}"
+    echo -e "   │ Database Password: ${GREEN}${mariadbpwd}${NC}"
+    echo -e "   └─────────────────────────────────────────────┘"
+    echo -e "\n⚠️  Important: Save these credentials in a secure location!"
+    echo -e "\nFor support, visit: https://github.com/twetech/itflow-ng/issues\n"
 }
 
 # Main execution flow
