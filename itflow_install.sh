@@ -32,7 +32,7 @@ check_version() {
 # Script verification with styled output
 verify_script() {
     echo -e "\n${BLUE}[•]${NC} Verifying script integrity..."
-    SCRIPT_HASH=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-ng/main/scripts/install.sh.sha256)
+    SCRIPT_HASH=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-install-script/main/itflow_install.sh.sha256)
     if ! echo "$SCRIPT_HASH *-" | sha256sum -c - >/dev/null 2>&1; then
         echo -e "${RED}╔════════════════════════════════════════╗${NC}"
         echo -e "${RED}║        Verification Failed!            ║${NC}"
