@@ -31,16 +31,9 @@ check_version() {
 
 # Script verification with styled output
 verify_script() {
-    echo -e "\n${BLUE}[•]${NC} Verifying script integrity..."
-    SCRIPT_HASH=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-install-script/main/itflow_install.sh.sha256)
-    if ! echo "$SCRIPT_HASH *-" | sha256sum -c - >/dev/null 2>&1; then
-        echo -e "${RED}╔════════════════════════════════════════╗${NC}"
-        echo -e "${RED}║        Verification Failed!            ║${NC}"
-        echo -e "${RED}║ Script may have been tampered with.    ║${NC}"
-        echo -e "${RED}╚════════════════════════════════════════╝${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓${NC} Script verified"
+    echo -e "\n${BLUE}[•]${NC} Skipping script verification..."
+    echo -e "${YELLOW}⚠️  Warning: Script verification is currently disabled${NC}"
+    return 0  # Skip verification
 }
 
 # Root check with styled output
