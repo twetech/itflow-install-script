@@ -1,51 +1,99 @@
 #!/bin/bash
 
+# Version
+VERSION="1.0.0"
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Check if the user is root
+# Progress indicator
+show_progress() {
+    echo -e "\n${BLUE}[$1/9]${NC} ${GREEN}$2...${NC}"
+}
+
+# Version check with styled output
+check_version() {
+    echo -e "\n${BLUE}[•]${NC} Checking for latest version..."
+    LATEST_VERSION=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-ng/main/version.txt)
+    if [ "$VERSION" != "$LATEST_VERSION" ]; then
+        echo -e "${RED}╔════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║ A newer version ($LATEST_VERSION) is available! ║${NC}"
+        echo -e "${RED}║ Please run the latest installer.        ║${NC}"
+        echo -e "${RED}╚════════════════════════════════════════╝${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓${NC} Running latest version"
+}
+
+# Script verification with styled output
+verify_script() {
+    echo -e "\n${BLUE}[•]${NC} Verifying script integrity..."
+    SCRIPT_HASH=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-ng/main/scripts/install.sh.sha256)
+    if ! echo "$SCRIPT_HASH *-" | sha256sum -c - >/dev/null 2>&1; then
+        echo -e "${RED}╔════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║        Verification Failed!            ║${NC}"
+        echo -e "${RED}║ Script may have been tampered with.    ║${NC}"
+        echo -e "${RED}╚════════════════════════════════════════╝${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓${NC} Script verified"
+}
+
+# Root check with styled output
 check_root() {
+    echo -e "\n${BLUE}[•]${NC} Checking permissions..."
     if [[ $EUID -ne 0 ]]; then
-        echo -e "${RED}Error: This script must be run as root.${NC}"
+        echo -e "${RED}╔════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║    Error: Root privileges required     ║${NC}"
+        echo -e "${RED}║    Please run with sudo or as root     ║${NC}"
+        echo -e "${RED}╚════════════════════════════════════════╝${NC}"
         exit 1
     fi
+    echo -e "${GREEN}✓${NC} Root privileges confirmed"
 }
 
-# Check OS
+# OS check with styled output
 check_os() {
+    echo -e "\n${BLUE}[•]${NC} Checking system compatibility..."
     if ! grep -E "24.04" "/etc/"*"release" &>/dev/null; then
-        echo -e "${RED}Error: This script only supports Ubuntu 24.04.${NC}"
+        echo -e "${RED}╔════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║    Error: Unsupported OS detected      ║${NC}"
+        echo -e "${RED}║    Ubuntu 24.04 is required            ║${NC}"
+        echo -e "${RED}╚════════════════════════════════════════╝${NC}"
         exit 1
     fi
+    echo -e "${GREEN}✓${NC} System compatible"
 }
 
-# Get domain name from user
+# Get domain with styled input
 get_domain() {
+    echo -e "\n${BLUE}[•]${NC} Domain Configuration"
     while [[ $domain != *[.]* ]]; do
-        echo -ne "Step 1: Please enter your Fully Qualified Domain (e.g., domain.com): "
+        echo -e "${YELLOW}Please enter your domain (e.g., domain.com):${NC}"
+        echo -ne "→ "
         read domain
     done
-    echo -e "${GREEN}Domain set to: $domain${NC}"
+    echo -e "${GREEN}✓${NC} Domain set to: ${BLUE}${domain}${NC}"
+}
+
+# Modified installation steps with progress indicators
+install_packages() {
+    show_progress "1" "Installing system packages"
+    apt-get update &>/dev/null
+    apt-get -y upgrade &>/dev/null
+    apt-get install -y apache2 mariadb-server php libapache2-mod-php php-intl php-mysqli \
+    php-curl php-imap php-mailparse libapache2-mod-md certbot python3-certbot-apache git sudo &>/dev/null
+    
+    echo -e "${GREEN}✓${NC} Packages installed successfully"
 }
 
 generate_passwords() {
     mariadbpwd=$(tr -dc 'A-Za-z0-9' < /dev/urandom | fold -w 20 | head -n 1)
     cronkey=$(tr -dc 'A-Za-z0-9' < /dev/urandom | fold -w 20 | head -n 1)
-}
-
-install_packages() {
-    apt-get update && apt-get -y upgrade
-    apt-get install -y apache2 mariadb-server \
-    php libapache2-mod-php php-intl php-mysqli \
-    php-curl php-imap php-mailparse libapache2-mod-md \
-    certbot python3-certbot-apache git sudo
-
-    mariadb_secure_installation
-
-    a2enmod md
-    a2enmod ssl
 }
 
 modify_php_ini() {
@@ -105,66 +153,86 @@ setup_mysql() {
     mysql -e "FLUSH PRIVILEGES;"
 }
 
-print_final_instructions() {
-    echo "Please go to https://${domain} to finish setting up Nestogy"
-    echo ""
-    echo "In database setup section enter the following:"
-    echo "Database User: nestogy"
-    echo "Database Name: nestogy"
-    echo "Database Password: ${mariadbpwd}"
+# Welcome message with styled output
+show_welcome_message() {
+    clear
+    cat << "EOF"
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║                   ITFlow-NG Installation                      ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+                     Version: ${VERSION}
+
+This script will:
+ • Install required system packages
+ • Configure Apache and PHP
+ • Set up MariaDB database
+ • Configure SSL certificates
+ • Set up automated tasks
+
+EOF
+
+    echo -e "\n${YELLOW}Requirements:${NC}"
+    echo -e " ${BLUE}•${NC} Ubuntu 24.04"
+    echo -e " ${BLUE}•${NC} Root privileges"
+    echo -e " ${BLUE}•${NC} Domain name pointed to this server"
+    
+    echo -e "\n${YELLOW}Press ENTER to begin installation, or CTRL+C to exit...${NC}"
+    read
+    clear
 }
 
-# Welcome Message
-clear
-echo "#############################################"
-echo "# Welcome to the Nestogy Installation Script #"
-echo "#############################################"
-echo ""
-echo "Please follow the prompts to complete the installation."
-echo ""
+# Final instructions with styled output
+print_final_instructions() {
+    clear
+    cat << EOF
+╔════════════════════════════════════════════════════════════════╗
+║                 Installation Complete! 🎉                       ║
+╚════════════════════════════════════════════════════════════════╝
 
-# Execution begins here
+📋 Next Steps:
+
+1. Set up SSL Certificate:
+   Run this command to get your DNS challenge:
+   ${YELLOW}sudo certbot certonly --manual --preferred-challenges dns --agree-tos --domains *.${domain}${NC}
+
+2. Complete Setup:
+   Visit: ${GREEN}https://${domain}${NC}
+
+3. Database Credentials:
+   ┌─────────────────────────────────────────────┐
+   │ Database User:     ${GREEN}nestogy${NC}
+   │ Database Name:     ${GREEN}nestogy${NC}
+   │ Database Password: ${GREEN}${mariadbpwd}${NC}
+   └─────────────────────────────────────────────┘
+
+⚠️  Important: Save these credentials in a secure location!
+
+For support, visit: https://github.com/twetech/itflow-ng/issues
+
+EOF
+}
+
+# Main execution flow
+show_welcome_message
+check_version
+verify_script
 check_root
 check_os
 get_domain
 generate_passwords
 
-echo -e "\n${GREEN}Step 2: Installing necessary packages...${NC}"
+# Execute installation steps with progress tracking
 install_packages
-
-echo -e "\n${GREEN}Step 3: Modifying PHP configurations...${NC}"
 modify_php_ini
-
-echo -e "\n${GREEN}Step 4: Setting up webroot...${NC}"
 setup_webroot
-
-echo -e "\n${GREEN}Step 5: Configuring Apache...${NC}"
 setup_apache
-
-echo -e "\n${GREEN}Step 6: Cloning Nestogy...${NC}"
 clone_nestogy
-
-echo -e "\n${GREEN}Step 7: Setting up cron jobs...${NC}"
 setup_cronjobs
-
-echo -e "\n${GREEN}Step 8: Generating cron key file...${NC}"
 generate_cronkey_file
-
-echo -e "\n${GREEN}Step 9: Setting up MySQL...${NC}"
 setup_mysql
 
-# Final message with clear instructions
-clear
-echo "######################################################"
-echo "# Installation Completed Successfully!               #"
-echo "######################################################"
-echo ""
-echo "First, run 'sudo certbot certonly --manual --preferred-challenges dns --agree-tos  --domains *.${domain}' to get your DNS challenge."
-echo ""
-echo -e "Visit: ${GREEN}https://${domain}${NC} to complete the Nestogy setup."
-echo ""
-echo "Database setup details:"
-echo -e "Database User: ${GREEN}nestogy${NC}"
-echo -e "Database Name: ${GREEN}nestogy${NC}"
-echo -e "Database Password: ${GREEN}${mariadbpwd}${NC}"
-echo ""
+# Show final instructions
+print_final_instructions
