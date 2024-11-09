@@ -18,8 +18,11 @@ show_progress() {
 # Version check with styled output
 check_version() {
     echo -e "\n${BLUE}[•]${NC} Checking for latest version..."
-    LATEST_VERSION=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-ng/main/version.txt)
-    if [ "$VERSION" != "$LATEST_VERSION" ]; then
+    LATEST_VERSION=$(curl -sSL https://raw.githubusercontent.com/twetech/itflow-install-script/refs/heads/main/version.txt)
+    if [[ "$LATEST_VERSION" == "404: Not Found" ]]; then
+        echo -e "${GREEN}✓${NC} Version check skipped - using local version: $VERSION"
+        return 0
+    elif [ "$VERSION" != "$LATEST_VERSION" ]; then
         echo -e "${RED}╔════════════════════════════════════════╗${NC}"
         echo -e "${RED}║ A newer version ($LATEST_VERSION) is available! ║${NC}"
         echo -e "${RED}║ Please run the latest installer.        ║${NC}"
@@ -27,7 +30,7 @@ check_version() {
         exit 1
     fi
     echo -e "${GREEN}✓${NC} Running latest version"
-}
+} 
 
 # Script verification with styled output
 verify_script() {
